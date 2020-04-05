@@ -1,6 +1,7 @@
 #include <Arduino.h>
-#include <BleGamepad.h>
-#include "Adafruit_ADS1015.h"
+#include <Adafruit_ADS1015.h>
+
+#include "BleGamepad.h"
 
 static const uint8_t D_PAD_UP_PIN = 27;
 static const uint8_t D_PAD_DOWN_PIN = 25;
@@ -22,7 +23,7 @@ static const uint8_t B_PIN = 18;
 
 static const uint8_t X_AXIS = 0;
 static const uint8_t Y_AXIS = 1;
-static const uint8_t THRESHOLD = 5;
+static const uint8_t THRESHOLD = 8;
 
 static signed char dPadValue = DPAD_CENTERED;
 
@@ -39,17 +40,24 @@ static int zPinValue = 1;
 static int aPinValue = 1;
 static int bPinValue = 1;
 
-static int xAxisValue = 0;
-static int yAxisValue = 0;
+static signed char xAxisValue = 0;
+static signed char yAxisValue = 0;
 
-BleGamepad bleGamepad;
-Adafruit_ADS1115 adc(0x48);
+BleGamepad bleGamepad("Nintento64 BLE", "Jacob's Garage.", 100);
+Adafruit_ADS1115 adc;
 
-int readAxis(int axis)
+signed char readAxis(int axis)
 {
   int reading = adc.readADC_SingleEnded(axis);
-  Serial.print("reading");
-  reading = map(reading, 0, 26075, -127, 127);
+  reading = map(reading, 0, 26100, -127, 127);
+
+  if (reading < -127) {
+    reading = -127;
+  }
+
+  if (reading > 127) {
+    reading = 127;
+  }
 
   if (abs(reading) < THRESHOLD)
   {
@@ -129,7 +137,7 @@ void IRAM_ATTR dPadChange()
   }
   dPadValue = newDPadValue;
 
-  bleGamepad.setAxes(0, 0, 0, 0, 0, 0, dPadValue);
+  bleGamepad.setHat(dPadValue);
 }
 
 void IRAM_ATTR cPadUpPinChange() { handlePinChange(&cPadUpPinValue, C_PAD_UP_PIN, BUTTON_7); }
@@ -193,17 +201,14 @@ void setup()
 
 void loop()
 {
-  // xAxisValue = 0 = readAxis(X_AXIS);
-  // yAxisValue = 0 = readAxis(Y_AXIS);
+  signed char newXAxisValue = readAxis(X_AXIS);
+  signed char newYAxisValue = readAxis(Y_AXIS);
 
-  // Serial.print("X: ");
-  // Serial.print(xAxisValue = 0);
-  // Serial.print(" | Y: ");
-
-  // if (bleGamepad.isConnected())
-  // {
-  //   bleGamepad.setAxes(xAxisValue = 0, yAxisValue = 0, 0, 0, 0, 0, DPAD_CENTERED);
-  // }
+  if (xAxisValue != newXAxisValue || yAxisValue != newYAxisValue) {
+    xAxisValue = newXAxisValue;
+    yAxisValue = newYAxisValue;
+    bleGamepad.setAxes(xAxisValue, yAxisValue);
+  }
 
   delay(20);
 }
