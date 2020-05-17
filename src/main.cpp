@@ -85,7 +85,7 @@ void handlePinChange(int *currentPinValue, uint8_t pin, uint16_t bleButton)
   }
 }
 
-void IRAM_ATTR dPadChange()
+void handleDPadChange()
 {
   signed char newDPadValue = 0;
   if (digitalRead(D_PAD_UP_PIN) == LOW)
@@ -140,19 +140,6 @@ void IRAM_ATTR dPadChange()
   bleGamepad.setHat(dPadValue);
 }
 
-void IRAM_ATTR cPadUpPinChange() { handlePinChange(&cPadUpPinValue, C_PAD_UP_PIN, BUTTON_7); }
-void IRAM_ATTR cPadDownPinChange() { handlePinChange(&cPadDownPinValue, C_PAD_DOWN_PIN, BUTTON_8); }
-void IRAM_ATTR cPadLeftPinChange() { handlePinChange(&cPadLeftPinValue, C_PAD_LEFT_PIN, BUTTON_9); }
-void IRAM_ATTR cPadRightPinChange() { handlePinChange(&cPadRightPinValue, C_PAD_RIGHT_PIN, BUTTON_10); }
-
-void IRAM_ATTR startPinChange() { handlePinChange(&startPinValue, START_PIN, BUTTON_3); }
-void IRAM_ATTR leftPinChange() { handlePinChange(&leftPinValue, LEFT_PIN, BUTTON_4); }
-void IRAM_ATTR rightPinChange() { handlePinChange(&rightPinValue, RIGHT_PIN, BUTTON_5); }
-void IRAM_ATTR zPinChange() { handlePinChange(&zPinValue, Z_PIN, BUTTON_6); }
-
-void IRAM_ATTR aPinChange() { handlePinChange(&aPinValue, A_PIN, BUTTON_1); }
-void IRAM_ATTR bPinChange() { handlePinChange(&bPinValue, B_PIN, BUTTON_2); }
-
 void setup()
 {
   Serial.begin(115200);
@@ -179,36 +166,33 @@ void setup()
 
   pinMode(A_PIN, INPUT_PULLUP);
   pinMode(B_PIN, INPUT_PULLUP);
-
-  attachInterrupt(D_PAD_UP_PIN, dPadChange, CHANGE);
-  attachInterrupt(D_PAD_DOWN_PIN, dPadChange, CHANGE);
-  attachInterrupt(D_PAD_LEFT_PIN, dPadChange, CHANGE);
-  attachInterrupt(D_PAD_RIGHT_PIN, dPadChange, CHANGE);
-
-  attachInterrupt(C_PAD_UP_PIN, cPadUpPinChange, CHANGE);
-  attachInterrupt(C_PAD_DOWN_PIN, cPadDownPinChange, CHANGE);
-  attachInterrupt(C_PAD_LEFT_PIN, cPadLeftPinChange, CHANGE);
-  attachInterrupt(C_PAD_RIGHT_PIN, cPadRightPinChange, CHANGE);
-
-  attachInterrupt(START_PIN, startPinChange, CHANGE);
-  attachInterrupt(LEFT_PIN, leftPinChange, CHANGE);
-  attachInterrupt(RIGHT_PIN, rightPinChange, CHANGE);
-  attachInterrupt(Z_PIN, zPinChange, CHANGE);
-
-  attachInterrupt(A_PIN, aPinChange, CHANGE);
-  attachInterrupt(B_PIN, bPinChange, CHANGE);
 }
 
 void loop()
 {
+  handlePinChange(&cPadUpPinValue, C_PAD_UP_PIN, BUTTON_7);
+  handlePinChange(&cPadDownPinValue, C_PAD_DOWN_PIN, BUTTON_8);
+  handlePinChange(&cPadLeftPinValue, C_PAD_LEFT_PIN, BUTTON_9);
+  handlePinChange(&cPadRightPinValue, C_PAD_RIGHT_PIN, BUTTON_10);
+  handlePinChange(&startPinValue, START_PIN, BUTTON_3);
+  handlePinChange(&leftPinValue, LEFT_PIN, BUTTON_4);
+  handlePinChange(&rightPinValue, RIGHT_PIN, BUTTON_5);
+  handlePinChange(&zPinValue, Z_PIN, BUTTON_6);
+  handlePinChange(&aPinValue, A_PIN, BUTTON_1);
+  handlePinChange(&bPinValue, B_PIN, BUTTON_2);
+
+  handleDPadChange();
+
   signed char newXAxisValue = readAxis(X_AXIS);
   signed char newYAxisValue = readAxis(Y_AXIS);
 
-  if (xAxisValue != newXAxisValue || yAxisValue != newYAxisValue) {
+  if (xAxisValue != newXAxisValue || yAxisValue != -newYAxisValue) {
     xAxisValue = newXAxisValue;
-    yAxisValue = newYAxisValue;
+    yAxisValue = -newYAxisValue;
     bleGamepad.setAxes(xAxisValue, yAxisValue);
   }
 
-  delay(20);
+  bleGamepad.notify();
+
+  delay(10);
 }

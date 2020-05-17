@@ -38,15 +38,16 @@ private:
   signed char xAxis;
   signed char yAxis;
   signed char hat;
+  uint8_t data[5];
   BleConnectionStatus* connectionStatus;
   BLEHIDDevice* hid;
   BLECharacteristic* inputGamepad;
   static void taskServer(void* pvParameter);
-  void notify();
 public:
   BleGamepad(std::string deviceName = "ESP32 BLE Gamepad", std::string deviceManufacturer = "Espressif", uint8_t batteryLevel = 100);
   void begin(void);
   void end(void);
+  void notify();
   void setAxes(signed char x, signed char y);
   void setHat(signed char h = DPAD_CENTERED);
   void press(uint16_t b = BUTTON_1);   // press BUTTON_1 by default

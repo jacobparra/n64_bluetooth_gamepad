@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -11,13 +12,8 @@
 #include "BleConnectionStatus.h"
 #include "BleGamepad.h"
 
-#if defined(CONFIG_ARDUHAL_ESP_LOG)
-  #include "esp32-hal-log.h"
-  #define LOG_TAG ""
-#else
-  #include "esp_log.h"
-  static const char* LOG_TAG = "BLEDevice";
-#endif
+#include "esp32-hal-log.h"
+static const char* LOG_TAG = "BLEDevice";
 
 static const uint8_t _hidReportDescriptor[] = {
   USAGE_PAGE(1),       0x01, // USAGE_PAGE (Generic Desktop)
@@ -66,6 +62,7 @@ BleGamepad::BleGamepad(std::string deviceName, std::string deviceManufacturer, u
   xAxis(0),
   yAxis(0),
   hat(0),
+  data{0,0,0,0,0},
   hid(0)
 {
   this->deviceName = deviceName;
@@ -87,38 +84,43 @@ void BleGamepad::setAxes(signed char x, signed char y)
 {
   xAxis = x;
   yAxis = y;
-  notify();
 }
 
 void BleGamepad::setHat(signed char h)
 {
   hat = h;
-  notify();
 }
 
 void BleGamepad::press(uint16_t b)
 {
   buttons = buttons | b;
-  notify();
 }
 
 void BleGamepad::release(uint16_t b)
 {
   buttons = buttons & ~b;
-  notify();
 }
 
 void BleGamepad::notify()
 {
-  if (this->isConnected())
+  if (!this->isConnected())
   {
-    uint8_t m[5];
-    m[0] = buttons;
-    m[1] = (buttons >> 8);
-    m[2] = xAxis;
-    m[3] = yAxis;
-    m[4] = hat;
-    this->inputGamepad->setValue(m, sizeof(m));
+    return;
+  }
+  uint8_t m[5];
+  m[0] = buttons;
+  m[1] = (buttons >> 8);
+  m[2] = xAxis;
+  m[3] = yAxis;
+  m[4] = hat;
+  if (data[0] != m[0] || data[1] != m[1] || data[2] != m[2] || data[3] != m[3] || data[4] != m[4])
+  {
+    data[0] = m[0];
+    data[1] = m[1];
+    data[2] = m[2];
+    data[3] = m[3];
+    data[4] = m[4];
+    this->inputGamepad->setValue(data, sizeof(data));
     this->inputGamepad->notify();
   }
 }
@@ -168,6 +170,6 @@ void BleGamepad::taskServer(void* pvParameter) {
   pAdvertising->start();
   BleGamepadInstance->hid->setBatteryLevel(BleGamepadInstance->batteryLevel);
 
-  ESP_LOGD(LOG_TAG, "Advertising started!");
+  log_d(LOG_TAG, "Advertising started!");
   vTaskDelay(portMAX_DELAY); //delay(portMAX_DELAY);
 }
