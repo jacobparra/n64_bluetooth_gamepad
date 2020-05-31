@@ -23,40 +23,35 @@ static const uint8_t B_PIN = 18;
 
 static const uint8_t X_AXIS = 0;
 static const uint8_t Y_AXIS = 1;
-static const uint8_t THRESHOLD = 8;
+static const uint8_t THRESHOLD = 100;
 
-static signed char dPadValue = DPAD_CENTERED;
+int aPinValue = 1;
+int bPinValue = 1;
+int zPinValue = 1;
+int leftPinValue = 1;
+int rightPinValue = 1;
+int startPinValue = 1;
 
-static int cPadUpPinValue = 1;
-static int cPadDownPinValue = 1;
-static int cPadLeftPinValue = 1;
-static int cPadRightPinValue = 1;
+uint8_t dPadValue = HAT_CENTERED;
+uint16_t xAxisValue = 0;
+uint16_t yAxisValue = 0;
+uint16_t zAxisValue = 0;
+uint16_t rZAxisValue = 0;
 
-static int startPinValue = 1;
-static int leftPinValue = 1;
-static int rightPinValue = 1;
-static int zPinValue = 1;
-
-static int aPinValue = 1;
-static int bPinValue = 1;
-
-static signed char xAxisValue = 0;
-static signed char yAxisValue = 0;
-
-BleGamepad bleGamepad("Nintento64 BLE", "Jacob's Garage.", 100);
+BleGamepad bleGamepad("Nintento64 BLE", "Jacob Parra.", 100);
 Adafruit_ADS1115 adc;
 
-signed char readAxis(int axis)
+uint16_t readAxis(int axis)
 {
   int reading = adc.readADC_SingleEnded(axis);
-  reading = map(reading, 0, 26100, -127, 127);
+  reading = map(reading, 0, 26100, -2047, 2047);
 
-  if (reading < -127) {
-    reading = -127;
+  if (reading < -2047) {
+    reading = -2047;
   }
 
-  if (reading > 127) {
-    reading = 127;
+  if (reading > 2047) {
+    reading = 2047;
   }
 
   if (abs(reading) < THRESHOLD)
@@ -66,7 +61,7 @@ signed char readAxis(int axis)
   return reading;
 }
 
-void handlePinChange(int *currentPinValue, uint8_t pin, uint16_t bleButton)
+void handleButtonChange(int *currentPinValue, uint8_t pin, uint16_t bleButton)
 {
   int newPinValue = digitalRead(pin);
   if (*currentPinValue == newPinValue)
@@ -87,48 +82,48 @@ void handlePinChange(int *currentPinValue, uint8_t pin, uint16_t bleButton)
 
 void handleDPadChange()
 {
-  signed char newDPadValue = 0;
+  uint8_t newDPadValue = 0;
   if (digitalRead(D_PAD_UP_PIN) == LOW)
   {
     if (digitalRead(D_PAD_LEFT_PIN) == LOW)
     {
-      newDPadValue = DPAD_UP_LEFT;
+      newDPadValue = HAT_UP_LEFT;
     }
     else if (digitalRead(D_PAD_RIGHT_PIN) == LOW)
     {
-      newDPadValue = DPAD_UP_RIGHT;
+      newDPadValue = HAT_UP_RIGHT;
     }
     else
     {
-      newDPadValue = DPAD_UP;
+      newDPadValue = HAT_UP;
     }
   }
   else if (digitalRead(D_PAD_DOWN_PIN) == LOW)
   {
     if (digitalRead(D_PAD_LEFT_PIN) == LOW)
     {
-      newDPadValue = DPAD_DOWN_LEFT;
+      newDPadValue = HAT_DOWN_LEFT;
     }
     else if (digitalRead(D_PAD_RIGHT_PIN) == LOW)
     {
-      newDPadValue = DPAD_DOWN_RIGHT;
+      newDPadValue = HAT_DOWN_RIGHT;
     }
     else
     {
-      newDPadValue = DPAD_DOWN;
+      newDPadValue = HAT_DOWN;
     }
   }
   else if (digitalRead(D_PAD_LEFT_PIN) == LOW)
   {
-    newDPadValue = DPAD_LEFT;
+    newDPadValue = HAT_LEFT;
   }
   else if (digitalRead(D_PAD_RIGHT_PIN) == LOW)
   {
-    newDPadValue = DPAD_RIGHT;
+    newDPadValue = HAT_RIGHT;
   }
   else
   {
-    newDPadValue = DPAD_CENTERED;
+    newDPadValue = HAT_CENTERED;
   }
 
   if (dPadValue == newDPadValue)
@@ -138,6 +133,35 @@ void handleDPadChange()
   dPadValue = newDPadValue;
 
   bleGamepad.setHat(dPadValue);
+}
+
+void handleCPadChange()
+{
+  uint16_t newZAxisValue = 0;
+  uint16_t newRZAxisValue = 0;
+  if (digitalRead(C_PAD_UP_PIN) == LOW)
+  {
+    newRZAxisValue = -2047;
+  }
+  else if (digitalRead(C_PAD_DOWN_PIN) == LOW)
+  {
+    newRZAxisValue = 2047;
+  }
+  else if (digitalRead(C_PAD_LEFT_PIN) == LOW)
+  {
+    newZAxisValue = -2047;
+  }
+  else if (digitalRead(C_PAD_RIGHT_PIN) == LOW)
+  {
+    newZAxisValue = 2047;
+  }
+
+
+  if (zAxisValue != newZAxisValue || rZAxisValue != newRZAxisValue) {
+    zAxisValue = newZAxisValue;
+    rZAxisValue = newRZAxisValue;
+    bleGamepad.setRightAxes(zAxisValue, rZAxisValue);
+  }
 }
 
 void setup()
@@ -159,40 +183,36 @@ void setup()
   pinMode(C_PAD_LEFT_PIN, INPUT_PULLUP);
   pinMode(C_PAD_RIGHT_PIN, INPUT_PULLUP);
 
-  pinMode(START_PIN, INPUT_PULLUP);
-  pinMode(LEFT_PIN, INPUT_PULLUP);
-  pinMode(RIGHT_PIN, INPUT_PULLUP);
-  pinMode(Z_PIN, INPUT_PULLUP);
-
   pinMode(A_PIN, INPUT_PULLUP);
   pinMode(B_PIN, INPUT_PULLUP);
+  pinMode(Z_PIN, INPUT_PULLUP);
+  pinMode(LEFT_PIN, INPUT_PULLUP);
+  pinMode(RIGHT_PIN, INPUT_PULLUP);
+  pinMode(START_PIN, INPUT_PULLUP);
 }
 
 void loop()
 {
-  handlePinChange(&cPadUpPinValue, C_PAD_UP_PIN, BUTTON_7);
-  handlePinChange(&cPadDownPinValue, C_PAD_DOWN_PIN, BUTTON_8);
-  handlePinChange(&cPadLeftPinValue, C_PAD_LEFT_PIN, BUTTON_9);
-  handlePinChange(&cPadRightPinValue, C_PAD_RIGHT_PIN, BUTTON_10);
-  handlePinChange(&startPinValue, START_PIN, BUTTON_3);
-  handlePinChange(&leftPinValue, LEFT_PIN, BUTTON_4);
-  handlePinChange(&rightPinValue, RIGHT_PIN, BUTTON_5);
-  handlePinChange(&zPinValue, Z_PIN, BUTTON_6);
-  handlePinChange(&aPinValue, A_PIN, BUTTON_1);
-  handlePinChange(&bPinValue, B_PIN, BUTTON_2);
+  handleButtonChange(&aPinValue, A_PIN, BUTTON_A);
+  handleButtonChange(&bPinValue, B_PIN, BUTTON_X);
+  handleButtonChange(&zPinValue, Z_PIN, BUTTON_THUMBL);
+  handleButtonChange(&leftPinValue, LEFT_PIN, BUTTON_L1);
+  handleButtonChange(&rightPinValue, RIGHT_PIN, BUTTON_R1);
+  handleButtonChange(&startPinValue, START_PIN, BUTTON_START);
 
   handleDPadChange();
+  handleCPadChange();
 
-  signed char newXAxisValue = readAxis(X_AXIS);
-  signed char newYAxisValue = readAxis(Y_AXIS);
+  uint16_t newXAxisValue = readAxis(X_AXIS);
+  uint16_t newYAxisValue = readAxis(Y_AXIS);
 
   if (xAxisValue != newXAxisValue || yAxisValue != -newYAxisValue) {
     xAxisValue = newXAxisValue;
     yAxisValue = -newYAxisValue;
-    bleGamepad.setAxes(xAxisValue, yAxisValue);
+    bleGamepad.setLeftAxes(xAxisValue, yAxisValue);
   }
 
   bleGamepad.notify();
 
-  delay(10);
+  delay(20);
 }

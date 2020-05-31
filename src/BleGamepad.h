@@ -7,38 +7,39 @@
 #include "BLEHIDDevice.h"
 #include "BLECharacteristic.h"
 
-#define BUTTON_1 	1
-#define BUTTON_2 	2
-#define BUTTON_3 	4
-#define BUTTON_4 	8
-#define BUTTON_5 	16
-#define BUTTON_6 	32
-#define BUTTON_7 	64
-#define BUTTON_8 	128
-#define BUTTON_9 	256
-#define BUTTON_10 	512
-#define BUTTON_11 	1024
-#define BUTTON_12 	2048
-#define BUTTON_13 	4096
-#define BUTTON_14 	8192
+#define BUTTON_A      1     // B0000000000000001
+#define BUTTON_B      2     // B0000000000000010
+#define BUTTON_X      4     // B0000000000000100
+#define BUTTON_Y      8     // B0000000000001000
+#define BUTTON_L1     16    // B0000000000010000
+#define BUTTON_R1     32    // B0000000000100000
+#define BUTTON_THUMBL 64    // B0000000001000000
+#define BUTTON_THUMBR 128   // B0000000010000000
+#define BUTTON_START  256   // B0000000100000000
+#define BUTTON_BACK   512   // B0000001000000000
+#define BUTTON_HOME   1024  // B0000010000000000
 
-#define DPAD_CENTERED 	0
-#define DPAD_UP 		1
-#define DPAD_UP_RIGHT 	2
-#define DPAD_RIGHT 		3
-#define DPAD_DOWN_RIGHT 4
-#define DPAD_DOWN 		5
-#define DPAD_DOWN_LEFT 	6
-#define DPAD_LEFT 		7
-#define DPAD_UP_LEFT 	8
+#define HAT_UP         0   // B00000000
+#define HAT_UP_RIGHT   16  // B00010000
+#define HAT_RIGHT 		 32  // B00100000
+#define HAT_DOWN_RIGHT 48  // B00110000
+#define HAT_DOWN 		   64  // B01000000
+#define HAT_DOWN_LEFT  80  // B01010000
+#define HAT_LEFT       96  // B01100000
+#define HAT_UP_LEFT    112 // B01110000
+#define HAT_CENTERED   128 // B10000000
 
 class BleGamepad {
 private:
   uint16_t buttons;
-  signed char xAxis;
-  signed char yAxis;
-  signed char hat;
-  uint8_t data[5];
+  uint8_t hat;
+  uint16_t xAxis;
+  uint16_t yAxis;
+  uint16_t zAxis;
+  uint16_t rZAxis;
+  uint8_t rXAxis;
+  uint8_t rYAxis;
+  uint8_t message[10];
   BleConnectionStatus* connectionStatus;
   BLEHIDDevice* hid;
   BLECharacteristic* inputGamepad;
@@ -48,16 +49,21 @@ public:
   void begin(void);
   void end(void);
   void notify();
-  void setAxes(signed char x, signed char y);
-  void setHat(signed char h = DPAD_CENTERED);
-  void press(uint16_t b = BUTTON_1);   // press BUTTON_1 by default
-  void release(uint16_t b = BUTTON_1); // release BUTTON_1 by default
-  bool isPressed(uint16_t b = BUTTON_1); // check BUTTON_1 by default
+  void setLeftAxes(uint16_t x, uint16_t y, bool autoNotify = true);
+  void setRightAxes(uint16_t z, uint16_t rZ, bool autoNotify = true);
+  void setLeftTrigger(uint8_t rX, bool autoNotify = true);
+  void setRightTrigger(uint8_t rY, bool autoNotify = true);
+  void setHat(uint8_t h = HAT_CENTERED, bool autoNotify = true);
+  void press(uint16_t b = BUTTON_A, bool autoNotify = true);
+  void release(uint16_t b = BUTTON_A, bool autoNotify = true);
+  bool isPressed(uint16_t b = BUTTON_A);
   bool isConnected(void);
   void setBatteryLevel(uint8_t level);
   uint8_t batteryLevel;
   std::string deviceManufacturer;
   std::string deviceName;
+protected:
+  virtual void onStarted(BLEServer *pServer) { };
 };
 
 #endif // CONFIG_BT_ENABLED
